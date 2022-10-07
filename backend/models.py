@@ -40,17 +40,19 @@ class Personas(db.Model):
     def update(self):
         try:
             db.session.commit()
+            return self.format()
         except:
             db.session.rollback()
         finally:
             db.session.close()
-        
 
     def delete(self):
         try:
             db.session.delete(self)
             db.session.commit()
-        except:
+            return self.id
+        except Exception as e:
+            print(e)
             db.session.rollback()
         finally:
             db.session.close()
@@ -84,7 +86,9 @@ class Maletas(db.Model):
         try:
             db.session.add(self)
             db.session.commit()
-        except:
+            return self.format()
+        except Exception as e:
+            print(e)
             db.session.rollback()
         finally:
             db.session.close()
@@ -92,7 +96,9 @@ class Maletas(db.Model):
     def update(self):
         try:
             db.session.commit()
-        except:
+            return self.format()
+        except Exception as e:
+            print(e)
             db.session.rollback()
         finally:
             db.session.close()
@@ -102,11 +108,11 @@ class Maletas(db.Model):
         try:
             db.session.delete(self)
             db.session.commit()
+            return self.id
         except:
             db.session.rollback()
         finally:
             db.session.close()
-        
 
     def format(self):
         return {

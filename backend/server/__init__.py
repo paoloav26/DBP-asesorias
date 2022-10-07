@@ -11,7 +11,7 @@ from flask_cors import CORS
 
 from models import setup_db, Personas, Maletas
 
-ITEM_POR_PARGINA = 5
+ITEM_POR_PARGINA = 5             
 
 def paginate(request,selection):
     pagina = request.args.get('page',1,int)
@@ -38,30 +38,44 @@ def create_app(test_config=None):
 
 
     # api-endpoints
-    @app.route('/maletas', methods=['GET'])
-    def get_maletas():
+    @app.route('/personas', methods=['GET'])
+    def get_personas():
         status = 500
         try:
-            selection = Personas.query.order_by('id').all()
-            personas = paginate(request,selection)
+            id_buscado = request.args.get('id',None)
+            if id_buscado == None:
+                selection = Personas.query.order_by('id').all()
+                personas = paginate(request,selection)
 
-            if len(personas) == 0:
-                status=404
-                abort(status)
+                if len(personas) == 0:
+                    status=404
+                    abort(status)
 
-            return jsonify({
-                'success': True,
-                'personas': personas,
-                'total_personas': len(selection),
-                'personas_en_pagina': len(personas)
-            })
+                return jsonify({
+                    'success': True,
+                    'personas': personas,
+                    'total_personas': len(selection),
+                    'personas_en_pagina': len(personas)
+                })
+            
+            else:
+                persona = Personas.query.filter_by(id=id_buscado).one_or_none()
+
+                if persona == None:
+                    status=400
+                    abort(status)
+
+                return jsonify({
+                    'success': True,
+                    'persona':persona.format()
+                })
 
         except Exception as e:
             print(e)
             abort(status)
 
-    @app.route('/maletas', methods=['POST'])
-    def post_maletas():
+    @app.route('/personas', methods=['POST'])
+    def post_personas():
         status = 500
         try:
 
@@ -90,7 +104,8 @@ def create_app(test_config=None):
 
             return jsonify({
                 'success': True,
-                'persona': persona.format()
+                'persona': persona.format(),
+                'total_personas': len(Personas.query.all())
             })
 
         except Exception as e:
@@ -98,17 +113,165 @@ def create_app(test_config=None):
             abort(status)
 
 
-    @app.route('/something/<id>', methods=['PATCH'])
-    def UPDATE(id):
-        return jsonify({
-            'success': True
-        })
+    @app.route('/personas/<id>', methods=['PATCH'])
+    def patch_personas(id):
+        status = 500
+        try:
+            args = request.get_json()
 
-    @app.route('/something/<id>', methods=['DELETE'])
-    def DELETE(id):
-        return jsonify({
-            'success': True
-        })
+            nombre = args.get('nombre',None)
+            apellidos = args.get('apellidos',None)
+
+            persona = Personas.query.filter_by(id=id).one_or_none()
+
+            if persona == None:
+                status = 404
+                abort(status)
+
+            if nombre != None:
+                persona.nombre=nombre
+            if apellidos != None:
+                persona.apellidos=apellidos
+
+            persona=persona.update()
+
+            return jsonify({
+                'success': True,
+                'persona':persona
+            })
+
+        except Exception as e:
+            print(e)
+            abort(status)
+
+    @app.route('/personas/<id>', methods=['DELETE'])
+    def delete_personas(id):
+        status = 500
+        try:
+            persona = Personas.query.filter_by(id=id).one_or_none()
+
+            if persona == None:
+                status = 404
+                abort(status)
+
+            persona_id=persona.delete()
+
+            return jsonify({
+                'success': True,
+                'deleted_id':persona_id
+            })
+        except Exception as e:
+            print(e)
+            abort(status)
+
+    @app.route('/maletas', methods=['GET'])
+    def get_maletas():
+        status = 500
+        try:
+            selection = Maletas.query.order_by('id').all()
+            maletas = paginate(request,selection)
+
+            if len(maletas) == 0:
+                status=404
+                abort(status)
+
+            return jsonify({
+                'success': True,
+                'maletas': maletas,
+                'total_maletas': len(selection),
+                'maletas_en_pagina': len(maletas)
+            })
+
+        except Exception as e:
+            print(e)
+            abort(status)
+
+    @app.route('/maletas', methods=['POST'])
+    def post_maletas():
+        status = 500
+        try:
+
+            args = request.get_json()
+            peso = args.get('peso',None)
+            color = args.get('color',None)
+            marca = args.get('marca',None)
+            id_dueno = args.get('id_dueno',None)
+
+            dueno = Personas.query.filter_by(id=id_dueno).one_or_none()
+
+            if dueno == None:
+                status = 404
+                abort(status)
+
+            if peso == None or color == None or marca == None or id_dueno == None:
+                status = 404
+                abort(status)
+
+            maleta = Maletas(peso=peso,color=color,marca=marca,id_dueno=id_dueno)
+
+            maleta_info=maleta.insert()
+
+            return jsonify({
+                'success': True,
+                'maleta': maleta_info,
+                'dueño':maleta.id_dueno
+            })
+
+        except Exception as e:
+            print(e)
+            abort(status)
+
+    @app.route('/maletas/<id>', methods=['PATCH'])
+    def patch_maletas(id):
+        status = 500
+        try:
+
+            args = request.get_json()
+            peso = args.get('peso',None)
+            color = args.get('color',None)
+            marca = args.get('marca',None)
+
+            maleta = Maletas.query.filter_by(id=id).one_or_none()
+
+            if maleta == None:
+                status = 404
+                abort(status)
+
+            if peso == None or color == None or marca == None:
+                status = 400
+                abort(status)
+
+            maleta_info=maleta.update()
+
+            return jsonify({
+                'success': True,
+                'maleta': maleta_info
+            })
+
+        except Exception as e:
+            print(e)
+            abort(status)
+
+    @app.route('/maletas/<id>', methods=['DELETE'])
+    def delete_maletas(id):
+        status = 500
+        try:
+            maleta = Maletas.query.filter_by(id=id).one_or_none()
+
+            if maleta == None:
+                status=404
+                abort(status)
+
+            maleta_id=maleta.delete()
+
+            return jsonify({
+                'success': True,
+                'deleted_maleta_id': maleta_id
+            })
+
+        except Exception as e:
+            print(e)
+            abort(status)
 
     # error handler
     @app.errorhandler(404)
